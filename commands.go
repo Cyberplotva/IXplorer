@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"sort"
 
@@ -10,20 +10,22 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type newRowsForDirEntriesMsg []table.Row
+type newDirEntriesMsg struct {
+	rows []table.Row
+}
 
 func getNewRowsForDirEntries(dirPath string) tea.Cmd {
 	return func() tea.Msg {
 		dirEntries, err := os.ReadDir(dirPath)
 		if err != nil {
-			panic(fmt.Sprintf("Error reading directory: %v", err))
+			log.Fatalf("Error reading directory: %v", err)
 		}
 
 		rows := make([]table.Row, len(dirEntries))
 		for i, startDirEntry := range dirEntries {
 			fi, err := startDirEntry.Info()
 			if err != nil {
-				panic(fmt.Sprintf("Error getting file info: %v", err))
+				log.Fatalf("Error getting file info: %v", err)
 			}
 
 			rows[i] = make(table.Row, 4)
@@ -48,6 +50,8 @@ func getNewRowsForDirEntries(dirPath string) tea.Cmd {
 			return rows[i][1] < rows[j][1]
 		})
 
-		return newRowsForDirEntriesMsg(rows)
+		return newDirEntriesMsg{
+			rows: rows,
+		}
 	}
 }

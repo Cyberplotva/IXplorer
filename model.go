@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +19,7 @@ type model struct {
 func newModel() *model {
 	startDirAbsPath, err := filepath.Abs(".")
 	if err != nil {
-		panic(fmt.Sprintf("Error getting absolute path of start directory: %v", err))
+		log.Fatalf("Error getting absolute path of start directory: %v", err)
 	}
 
 	columns := []table.Column{
@@ -65,23 +65,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			entryPath := filepath.Join(m.dirPath, entryName)
 			fi, err := os.Stat(entryPath)
 			if err != nil {
-				panic(fmt.Sprintf("Error reading file info: %v", err))
+				log.Fatalf("Error reading file info: %v", err)
 			}
-
+			
 			if fi.IsDir() {
 				if _, err := os.ReadDir(entryPath); err == nil {
+					storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
 					m.dirPath = filepath.Join(m.dirPath, entryName)
+					return m, getNewRowsForDirEntries(m.dirPath)
 				}
 			}
-			return m, getNewRowsForDirEntries(m.dirPath)
+			return m, nil
 		case "left":
+			storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
 			m.dirPath = filepath.Dir(m.dirPath)
 			return m, getNewRowsForDirEntries(m.dirPath)
 		}
-	case newRowsForDirEntriesMsg:
-		m.dirEntries.SetRows(msg)
-		m.dirEntries.GotoTop()
+	case newDirEntriesMsg:
+		m.dirEntries.SetRows(msg.rows)
 		m.dirEntries.Focus()
+		m.dirEntries.SetCursor(
+			storage.cursorPosition[m.dirPath])
 	}
 	var cmd tea.Cmd
 	m.dirEntries, cmd = m.dirEntries.Update(msg)
