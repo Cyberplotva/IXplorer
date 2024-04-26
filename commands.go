@@ -18,14 +18,14 @@ func getNewRowsForDirEntries(dirPath string) tea.Cmd {
 	return func() tea.Msg {
 		dirEntries, err := os.ReadDir(dirPath)
 		if err != nil {
-			log.Fatalf("Error reading directory: %v", err)
+			log.Fatal("Error reading directory: ", err)
 		}
 
 		rows := make([]table.Row, len(dirEntries))
 		for i, startDirEntry := range dirEntries {
 			fi, err := startDirEntry.Info()
 			if err != nil {
-				log.Fatalf("Error getting file info: %v", err)
+				log.Fatal("Error getting file info: ", err)
 			}
 
 			rows[i] = make(table.Row, 4)

@@ -13,16 +13,15 @@ const (
 )
 
 // Lipgloss styles
-
-var specialBorder = lipgloss.Border{
+var borderMiddle = lipgloss.Border{
 	Top:          "─",
 	Bottom:       "─",
 	Left:         "│",
 	Right:        "│",
-	TopLeft:      "│", // Changed
-	TopRight:     "│", // Changed
-	BottomLeft:   "└",
-	BottomRight:  "┘",
+	TopLeft:      "├", // Changed from default
+	TopRight:     "┤", // Changed from default
+	BottomLeft:   "├", // Changed from default
+	BottomRight:  "┤", // Changed from default
 	MiddleLeft:   "├",
 	MiddleRight:  "┤",
 	Middle:       "┼",
@@ -30,18 +29,24 @@ var specialBorder = lipgloss.Border{
 	MiddleBottom: "┴",
 }
 
+const terminalSize = 78
+
 var (
-	lipglossStyleHelperText = lipgloss.NewStyle().
-				Foreground(lipgloss.Color(ANSIColorLightGrey)).
-				Italic(true)
-	lipglossStyleBorderedBlock = lipgloss.NewStyle().
-					BorderStyle(specialBorder).
-					BorderForeground(lipgloss.Color(ANSIColorLightGrey))
-	lipglossStyleBorderedTop = lipgloss.NewStyle().
-					Border(lipgloss.NormalBorder(), true, true, false, true).
-					BorderForeground(lipgloss.Color(ANSIColorLightGrey)).
-					// PaddingRight(75).
-					Width(78)
+	// Path
+	lipglossStyleUpperBlock = lipgloss.NewStyle().
+				Border(lipgloss.NormalBorder(), true, true, false, true).
+				Width(terminalSize).
+				Bold(true)
+
+	// Directory entries
+	lipglossStyleMiddleBlock = lipgloss.NewStyle().
+					BorderStyle(borderMiddle).
+					Width(terminalSize)
+
+	// Help
+	lipglossStyleBottomBlock = lipgloss.NewStyle().
+					Border(lipgloss.NormalBorder(), false, true, true, true).
+					Width(terminalSize)
 
 	lipglossStyleTable = table.DefaultStyles()
 )
@@ -49,8 +54,8 @@ var (
 func init() {
 	lipglossStyleTable.Header = lipglossStyleTable.Header.
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color(ANSIColorLightGrey)).
-		BorderBottom(true)
+		BorderBottom(true).
+		Bold(false)
 	lipglossStyleTable.Selected = lipglossStyleTable.Selected.
 		Foreground(lipgloss.Color(ANSIColorLightYellow)).
 		Background(lipgloss.Color(ANSIColorBlue)).

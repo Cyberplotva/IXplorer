@@ -6,20 +6,24 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
 	dirPath    string
 	dirEntries table.Model
-	isQuitting bool
+	help       help.Model
+	quitting   bool
 }
 
 func newModel() *model {
 	startDirAbsPath, err := filepath.Abs(".")
 	if err != nil {
-		log.Fatalf("Error getting absolute path of start directory: %v", err)
+		log.Fatal("Error getting absolute path of start directory: ", err)
 	}
 
 	columns := []table.Column{
@@ -39,7 +43,8 @@ func newModel() *model {
 	return &model{
 		dirPath:    startDirAbsPath,
 		dirEntries: startDirEntries,
-		isQuitting: false,
+		help:       help.New(),
+		quitting:   false,
 	}
 }
 
@@ -53,11 +58,12 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q":
-			m.isQuitting = true
+		switch {
+		case key.Matches(msg, keys.Quit):
+			m.quitting = true
 			return m, tea.Sequence(tea.ClearScreen, tea.Quit)
-		case "right":
+
+		case key.Matches(msg, keys.Right):
 			if len(m.dirEntries.Rows()) == 0 {
 				return m, nil
 			}
@@ -65,9 +71,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			entryPath := filepath.Join(m.dirPath, entryName)
 			fi, err := os.Stat(entryPath)
 			if err != nil {
-				log.Fatalf("Error reading file info: %v", err)
+				log.Fatal("Error reading file info: ", err)
 			}
-			
+
 			if fi.IsDir() {
 				if _, err := os.ReadDir(entryPath); err == nil {
 					storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
@@ -76,11 +82,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			return m, nil
-		case "left":
+
+		case key.Matches(msg, keys.Left):
 			storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
 			m.dirPath = filepath.Dir(m.dirPath)
 			return m, getNewRowsForDirEntries(m.dirPath)
+		
+		case key.Matches(msg, keys.Help):
+			before := lipgloss.Height(m.help.View(keys))
+			m.help.ShowAll = !m.help.ShowAll
+			diff := lipgloss.Height(m.help.View(keys)) - before
+
+			if m.dirEntries.Cursor()+diff >= m.dirEntries.Height() {
+				m.dirEntries.SetCursor(m.dirEntries.Height() - diff - 1)
+			}
+			m.dirEntries.SetHeight(m.dirEntries.Height() - diff)
 		}
+
 	case newDirEntriesMsg:
 		m.dirEntries.SetRows(msg.rows)
 		m.dirEntries.Focus()
@@ -93,23 +111,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	if m.isQuitting {
+	if m.quitting {
 		return ""
 	}
 
 	sb := new(strings.Builder)
 
 	sb.WriteString(
-		lipglossStyleBorderedTop.Render(m.dirPath))
-
-	sb.WriteString("\n")
-
-	sb.WriteString(
-		lipglossStyleBorderedBlock.Render(
-			m.dirEntries.View()))
+		lipglossStyleUpperBlock.Render(
+			m.dirPath) + "\n")
 
 	sb.WriteString(
-		lipglossStyleHelperText.Render("\nPress 'q' to quit"))
+		lipglossStyleMiddleBlock.Render(
+			m.dirEntries.View()) + "\n")
+
+	sb.WriteString(
+		lipglossStyleBottomBlock.Render(
+			m.help.View(keys)))
 
 	return sb.String()
 }
