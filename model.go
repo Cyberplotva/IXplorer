@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -87,16 +86,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
 			m.dirPath = filepath.Dir(m.dirPath)
 			return m, getNewRowsForDirEntries(m.dirPath)
-		
-		case key.Matches(msg, keys.Help):
-			before := lipgloss.Height(m.help.View(keys))
-			m.help.ShowAll = !m.help.ShowAll
-			diff := lipgloss.Height(m.help.View(keys)) - before
 
-			if m.dirEntries.Cursor()+diff >= m.dirEntries.Height() {
-				m.dirEntries.SetCursor(m.dirEntries.Height() - diff - 1)
-			}
-			m.dirEntries.SetHeight(m.dirEntries.Height() - diff)
+		case key.Matches(msg, keys.Help):
+			m.help.ShowAll = !m.help.ShowAll
 		}
 
 	case newDirEntriesMsg:
