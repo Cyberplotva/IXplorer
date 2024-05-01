@@ -19,12 +19,12 @@ type model struct {
 	quitting   bool
 }
 
-func newModel() *model {
+func newModel() *model {	
 	startDirAbsPath, err := filepath.Abs(".")
 	if err != nil {
 		log.Fatal("Error getting absolute path of start directory: ", err)
 	}
-
+	
 	columns := []table.Column{
 		{Title: "Type", Width: 4},
 		{Title: "Name", Width: 30},
@@ -48,8 +48,10 @@ func newModel() *model {
 }
 
 func (m model) Init() tea.Cmd {
+	go updateCursorPositionsForParentDirs(m.dirPath)
+
 	return tea.Sequence(
-		tea.ClearScreen,
+		tea.ClearScreen,	
 		getNewRowsForDirEntries(m.dirPath),
 	)
 }
