@@ -98,7 +98,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if fi.IsDir() {
 				if _, err := os.ReadDir(entryPath); err == nil {
-					storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
+					storage.cursorPosition.Store(m.dirPath, m.dirEntries.Cursor())
 					m.dirPath = filepath.Join(m.dirPath, entryName)
 					return m, getNewRowsForDirEntries(m.dirPath)
 				}
@@ -106,7 +106,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, keys.Left):
-			storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
+			storage.cursorPosition.Store(m.dirPath, m.dirEntries.Cursor())
 			m.dirPath = filepath.Dir(m.dirPath)
 			return m, getNewRowsForDirEntries(m.dirPath)
 		}
@@ -114,8 +114,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case newDirEntriesMsg:
 		m.dirEntries.SetRows(msg.rows)
 		m.dirEntries.Focus()
-		m.dirEntries.SetCursor(
-			storage.cursorPosition[m.dirPath])
+		if cursor, ok := storage.cursorPosition.Load(m.dirPath); ok {
+			if cursor, ok := cursor.(int); !ok {
+				log.Fatalf("Cursor position for directory %s is not an int. Cursor position: %v", m.dirPath, cursor)
+			} else {
+				m.dirEntries.SetCursor(cursor)
+			}
+		}
 	}
 
 	return m, nil

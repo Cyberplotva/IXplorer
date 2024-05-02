@@ -51,7 +51,8 @@ func getRowsFromDir(dirPath string) []table.Row {
 }
 
 func updateCursorPositionsForParentDirs(currDirPath string) {
-	// Get path of every parent directory in for loop
+	storage.cursorPosition.Store(currDirPath, 0)
+	
 	for {
 		parentDirPath := filepath.Dir(currDirPath)
 		if parentDirPath == currDirPath {
@@ -62,7 +63,7 @@ func updateCursorPositionsForParentDirs(currDirPath string) {
 		rows := getRowsFromDir(parentDirPath)
 		for i, row := range rows {
 			if row[1] == currDirBase {
-				storage.cursorPosition[parentDirPath] = i
+				storage.cursorPosition.Store(parentDirPath, i)
 				break
 			}
 		}
