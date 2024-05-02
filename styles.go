@@ -10,6 +10,7 @@ const (
 	ANSIColorLightGrey   = "241"
 	ANSIColorLightYellow = "229"
 	ANSIColorBlue        = "57"
+	ANSIColorWhite       = "15"
 )
 
 // Lipgloss styles
@@ -48,7 +49,8 @@ var (
 					Border(lipgloss.NormalBorder(), false, true, true, true).
 					Width(terminalSize)
 
-	lipglossStyleTable = table.DefaultStyles()
+	lipglossStyleTable        = table.DefaultStyles()
+	lipglossStyleBlurredTable = table.DefaultStyles()
 )
 
 func init() {
@@ -60,4 +62,10 @@ func init() {
 		Foreground(lipgloss.Color(ANSIColorLightYellow)).
 		Background(lipgloss.Color(ANSIColorBlue)).
 		Bold(false)
+
+	lipglossStyleBlurredTable.Header = lipglossStyleTable.Header.Copy()
+	lipglossStyleBlurredTable.Cell = lipglossStyleTable.Cell.Copy()
+	lipglossStyleBlurredTable.Selected = lipglossStyleTable.Selected.Copy().
+		Foreground(lipgloss.Color(ANSIColorWhite)).
+		Background(lipgloss.Color(ANSIColorLightGrey))
 }

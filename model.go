@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -60,10 +61,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
+		
 		case key.Matches(msg, keys.Quit):
 			m.quitting = true
 			return m, tea.Sequence(tea.ClearScreen, tea.Quit)
+		
+		case key.Matches(msg, keys.Help):
+			helpHeightBefore := lipgloss.Height(m.help.View(keys))
+			m.help.ShowAll = !m.help.ShowAll
+			helpHeightAfter := lipgloss.Height(m.help.View(keys))
+			m.dirEntries.SetHeight(m.dirEntries.Height() + helpHeightBefore - helpHeightAfter)
 
+			if m.help.ShowAll {
+				m.dirEntries.Blur()
+				m.dirEntries.SetStyles(lipglossStyleBlurredTable)
+			} else {
+				m.dirEntries.Focus()
+				m.dirEntries.SetStyles(lipglossStyleTable)
+			}
+		
+		case key.Matches(msg, keys.Up), key.Matches(msg, keys.Down):
+			var cmd tea.Cmd
+			m.dirEntries, cmd = m.dirEntries.Update(msg)
+			return m, cmd
+			
 		case key.Matches(msg, keys.Right):
 			if len(m.dirEntries.Rows()) == 0 {
 				return m, nil
@@ -88,9 +109,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			storage.cursorPosition[m.dirPath] = m.dirEntries.Cursor()
 			m.dirPath = filepath.Dir(m.dirPath)
 			return m, getNewRowsForDirEntries(m.dirPath)
-
-		case key.Matches(msg, keys.Help):
-			m.help.ShowAll = !m.help.ShowAll
 		}
 
 	case newDirEntriesMsg:
@@ -99,9 +117,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.dirEntries.SetCursor(
 			storage.cursorPosition[m.dirPath])
 	}
-	var cmd tea.Cmd
-	m.dirEntries, cmd = m.dirEntries.Update(msg)
-	return m, cmd
+
+	return m, nil
 }
 
 func (m model) View() string {
