@@ -11,7 +11,6 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-
 func getRowsFromDir(dirPath string) []table.Row {
 	dirEntries, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -33,7 +32,7 @@ func getRowsFromDir(dirPath string) []table.Row {
 			rows[i][3] = humanize.Bytes(uint64(fi.Size()))
 		}
 		rows[i][1] = fi.Name()
-		rows[i][2] = fi.ModTime().Format("2006.02.01 15:04")
+		rows[i][2] = fi.ModTime().Format("2006.01.02 15:04")
 	}
 
 	// Sort by date, type and then name
@@ -52,7 +51,7 @@ func getRowsFromDir(dirPath string) []table.Row {
 
 func updateCursorPositionsForParentDirs(currDirPath string) {
 	storage.cursorPosition.Store(currDirPath, 0)
-	
+
 	for {
 		parentDirPath := filepath.Dir(currDirPath)
 		if parentDirPath == currDirPath {
@@ -72,14 +71,16 @@ func updateCursorPositionsForParentDirs(currDirPath string) {
 	}
 }
 
-type newDirEntriesMsg struct {
-	rows []table.Row
+type dirEntriesUpdateMsg struct {
+	dirPath string
+	rows    []table.Row
 }
 
-func getNewRowsForDirEntries(dirPath string) tea.Cmd {
+func getNewDirEntriesData(dirPath string) tea.Cmd {
 	return func() tea.Msg {
-		return newDirEntriesMsg{
-			rows: getRowsFromDir(dirPath),
+		return dirEntriesUpdateMsg{
+			dirPath: dirPath,
+			rows:    getRowsFromDir(dirPath),
 		}
 	}
 }

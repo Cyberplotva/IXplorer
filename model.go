@@ -20,12 +20,12 @@ type model struct {
 	quitting   bool
 }
 
-func newModel() *model {	
+func newModel() *model {
 	startDirAbsPath, err := filepath.Abs(".")
 	if err != nil {
 		log.Fatal("Error getting absolute path of start directory: ", err)
 	}
-	
+
 	columns := []table.Column{
 		{Title: "Type", Width: 4},
 		{Title: "Name", Width: 30},
@@ -52,8 +52,8 @@ func (m model) Init() tea.Cmd {
 	go updateCursorPositionsForParentDirs(m.dirPath)
 
 	return tea.Sequence(
-		tea.ClearScreen,	
-		getNewRowsForDirEntries(m.dirPath),
+		tea.ClearScreen,
+		getNewDirEntriesData(m.dirPath),
 	)
 }
 
@@ -61,11 +61,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		
+
 		case key.Matches(msg, keys.Quit):
 			m.quitting = true
 			return m, tea.Sequence(tea.ClearScreen, tea.Quit)
-		
+
 		case key.Matches(msg, keys.Help):
 			helpHeightBefore := lipgloss.Height(m.help.View(keys))
 			m.help.ShowAll = !m.help.ShowAll
@@ -79,12 +79,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.dirEntries.Focus()
 				m.dirEntries.SetStyles(lipglossStyleTable)
 			}
-		
+
 		case key.Matches(msg, keys.Up), key.Matches(msg, keys.Down):
 			var cmd tea.Cmd
 			m.dirEntries, cmd = m.dirEntries.Update(msg)
 			return m, cmd
-			
+
 		case key.Matches(msg, keys.Right):
 			if len(m.dirEntries.Rows()) == 0 {
 				return m, nil
@@ -100,7 +100,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if _, err := os.ReadDir(entryPath); err == nil {
 					storage.cursorPosition.Store(m.dirPath, m.dirEntries.Cursor())
 					m.dirPath = filepath.Join(m.dirPath, entryName)
-					return m, getNewRowsForDirEntries(m.dirPath)
+					m.dirEntries.SetRows(nil) // Clear dir entries while loading new ones
+					return m, getNewDirEntriesData(m.dirPath)
 				}
 			}
 			return m, nil
@@ -108,10 +109,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Left):
 			storage.cursorPosition.Store(m.dirPath, m.dirEntries.Cursor())
 			m.dirPath = filepath.Dir(m.dirPath)
-			return m, getNewRowsForDirEntries(m.dirPath)
+			m.dirEntries.SetRows(nil) // Clear dir entries while loading new ones
+			return m, getNewDirEntriesData(m.dirPath)
 		}
 
-	case newDirEntriesMsg:
+	case dirEntriesUpdateMsg:
+		if msg.dirPath != m.dirPath {
+			return m, nil
+		}
+
 		m.dirEntries.SetRows(msg.rows)
 		m.dirEntries.Focus()
 		if cursor, ok := storage.cursorPosition.Load(m.dirPath); ok {
